@@ -1,0 +1,232 @@
+;;; -*- Mode: emacs-lisp -*-
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;    my .emacs file from hell now points to a number of smaller files.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;  add my emacs directory to the load path for loading customization
+;;;  files, and load some.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(setq default-frame-alist '((width . 100) (fullscreen . fullheight)))
+(setq initial-frame-list '((width . 100) (fullscreen . fullheight) (left . 0.75)))
+
+(setq load-path
+      (append (list "/usr/local/share/emacs/site-lisp"
+                    "/usr/share/emacs/site-lisp"
+                    "~/emacs"
+                    "~/emacs/emacs-rails"
+                    "~/emacs/hooks"
+                    "~/emacs/plugins/yasnippet")
+              load-path
+              ))
+
+(require 'yasnippet)
+; (require 'ace-window)
+(require 'package)
+(add-to-list 'package-archives (cons "melpa" "http://melpa.org/packages/") t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;   setup some default- and configuration-variables.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require 'cl)                             ;;; Common LISP macros
+
+(defvar home-page-url "http://www.cs.berkeley.edu/~fox")
+
+(setq emacs19 (>= (string-to-number emacs-version) 19))
+
+(when (equal system-type 'darwin)
+  (dolist (path '("/usr/local/bin" "/opt/local/bin"))
+    (setenv "PATH" (concat (getenv "PATH") ":" path))
+    (push path exec-path)))
+
+(defun make-identity-translations ()
+  (let ((identity-translations (make-string 256 0)))
+    (dotimes (i 256)
+      (setf (aref identity-translations i) i))
+    identity-translations))
+
+(defun big-font ()
+  (interactive)
+  (set-face-attribute 'default nil :height 140)
+  (set-frame-height (selected-frame) 37))
+
+(setq
+ blink-cursor-mode t
+ gud-gdb-command-name "gdb --annotate=1"
+ js2-auto-indent-p t
+ js2-basic-offset 2
+ js2-bounce-indent-p nil
+ js2-cleanup-whitespace t
+ js2-enter-indents-newline t
+ js2-indent-on-enter-key t
+ large-file-warning-threshold nil
+
+ ns-command-modifier 'meta         ;;; fixes broken command key usage on
+ adaptive-fill-mode nil
+ auto-save-interval 80             ;;; keystrokes between auto-saves
+ auto-save-timeout 60               ;;; idle seconds until auto-save
+ backup-by-copying-when-linked t    ;;; backup symlinked files correctly
+ backup-directory-alist '(("." . "~/.emacs-backups"))
+ completion-ignored-extensions  (nconc completion-ignored-extensions
+                                       '(".tab.c" ".yy.c" ".32.obj" ".o"))
+ default-fill-column 72
+ default-major-mode 'indented-text-mode
+ default-tab-width 8                ;;; default tab stop width
+ delete-auto-save-files t           ;;; delete #filename# files on exit
+ find-file-visit-truename nil       ;;; don't resolve symlink names for find-file
+ inhibit-local-variables t          ;;; protect ourselves from whammies
+ mouse-wheel-scroll-amount '(1 ((shift) . 1))
+ next-line-add-newlines nil         ;;; behavior of next-line at end
+ require-final-newline 'ask         ;;; Confirm add NL at EOF if not pres
+ scroll-conservatively 1000         ;;; scroll 1 line at a time on C-n/C-p
+ dired-listing-switches "-alg"
+ )
+
+(setq-default
+ indent-tabs-mode nil
+ auto-fill-hook 'auto-fill-function
+ )
+
+;;; For some reason, I now get complaints about auto-fill-hook being void.  So
+;;; set it here to a reasonable default value.
+
+(set-cursor-color 'red)
+(blink-cursor-mode 1)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;   allow use of some commands that aren't available in "novice mode"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(put 'eval-expression 'disabled nil)
+(put 'narrow-to-region 'disabled nil)
+(put 'save-buffers-kill-emacs 'disabled t)
+(menu-bar-mode 1)
+
+
+;; Set transparency of emacs
+(defun transparency (value)
+  "Sets the transparency of the frame window. 0=transparent/100=opaque"
+  (interactive "nTransparency Value 0 - 100 opaque:")
+  (set-frame-parameter (selected-frame) 'alpha value))
+
+(defun tags-search-other-window (regexp)
+  "Search for tag (regexp) in other window"
+  (interactive "sTags search other window (regexp): ")
+  (switch-to-buffer-other-window nil)
+  (tags-search regexp))
+
+(setq files
+      '("automode"
+        "crypt"    ;; automatically recognize encrypted/compressed files
+        "efill"
+        "two-mode-mode"
+        "hooks/find-file-hooks"
+        "haml-mode"
+        "unmacify"
+        "misc"
+        "wc-mode"
+        "nxhtml/autostart.el"
+        ))
+
+(defun whole-enchilada ()
+  "Load all customizations."
+  (interactive)
+  (server-start)
+  (column-number-mode)
+  (key-bindings)
+  (dolist (file files)
+    (if (file-readable-p file)
+        (load file 'noerror)))
+  (dolist (hook (directory-files (expand-file-name
+                                  (concat (getenv "HOME") "/emacs/hooks/"))
+                                 'full-pathnames
+                                 "\\.elc?$"))
+    (message "Loading hooks from %s..." hook)
+    (load hook nil 'quietly))
+  ;; re-enable some commands
+  (dolist (prop '(scroll-left upcase-region downcase-region))
+    (put prop 'disabled nil))
+  (message "Done loading hooks"))
+
+(load "misc" nil 'quietly)                           ;always need this.
+
+(if (boundp 'first-line-special-regexp)
+    (setq first-line-special-regexp
+          (concat "^\\s-*[-+]\\s-+\\|^\\s-*[QA][0-9]*:\\|"
+                  first-line-special-regexp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;  set some key bindings I like.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun key-bindings ()
+  "Set my favorite key bindings."
+  (global-unset-key "\C-z")
+  (global-unset-key "\M-`")
+  (define-key global-map "\C-l"    'recenter)
+  (define-key global-map "\M-`"    'other-frame)
+  (define-key global-map "\M-!"    'shell-command-on-buffer)
+  (define-key global-map "\C-n"    'next-line)
+  (define-key global-map "\M-g"    'goto-line)
+  (define-key global-map "\M-l"    'what-line)
+  (define-key global-map "\M-\C-l" 'what-cursor-position)
+  (define-key global-map "\M-s"    'tags-search)
+  (define-key global-map "\M-\C-f" 'auto-fill-mode)
+  (define-key global-map "\M-," 'tags-loop-continue)
+  (define-key help-map   "\C-v"    'set-variable)
+  (define-key text-mode-map "\C-\M-q" 'fill-region-as-paragraph)
+  (define-key global-map [M-right] 'cycle-buffers)
+  (define-key global-map [f3] 'eval-to-buffer)
+  (define-key global-map [f4] 'shell-command-on-buffer)
+  (define-key global-map [f5] 'shell-command-on-region)
+  (define-key global-map [f6] 'revert-buffer)
+  (define-key global-map [f7] 'replace-string)
+  (define-key global-map [C-f7] 'replace-regexp)
+  (define-key global-map [f13] '(lambda () (interactive) (other-frame -1)))
+  (define-key global-map "\M-u" 'upcase-initials)
+  (define-key global-map "\M-+" '(lambda() (interactive) (text-scale-increase 0.5)))
+  (define-key global-map "\M-_" '(lambda() (interactive) (text-scale-decrease 0.5)))
+
+;;;
+;;; these key bindings go with functions in misc.el
+;;;
+
+  (define-key ctl-x-map "\C-n" 'intelligent-set-fill-prefix)
+  (define-key ctl-x-4-map "\M-s"  'tags-search-other-window)
+  (define-key global-map "\C-\M-a"
+    '(lambda () (interactive) (set-window-configuration remember-window-config)))
+  (define-key ctl-x-map "\C-u"
+    '(lambda () (interactive) (insert home-page-url)))
+  )
+;;;
+;;;  In picture-mode, the deletion key should just back up without pulling text
+;;;  along with it.
+;;;
+
+(setq picture-mode-hook
+      '(lambda ()
+         (substitute-key-definition 'delete-backward-char 'backward-char
+                                    picture-mode-map)))
+
+
+(whole-enchilada)
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (haml-mode robe js2-mode feature-mode markdown-mode flymake-haml yasnippet-snippets php-mode ace-window)))
+ '(safe-local-variable-values (quote ((TeX-master . "manifesto"))))
+ '(transient-mark-mode nil))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
