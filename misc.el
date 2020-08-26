@@ -3,6 +3,26 @@
 ;;;  major mode hooks.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Set transparency of emacs
+(defun transparency (value)
+  "Sets the transparency of the frame window. 0=transparent/100=opaque"
+  (interactive "nTransparency Value 0 - 100 opaque:")
+  (set-frame-parameter (selected-frame) 'alpha value))
+
+(defun tags-search-other-window (regexp)
+  "Search for tag (regexp) in other window"
+  (interactive "sTags search other window (regexp): ")
+  (switch-to-buffer-other-window nil)
+  (tags-search regexp))
+
+
+(defun uuid ()
+  (interactive)
+  (insert "\"")
+  (call-process "uuidgen" nil t)
+  (backward-char 1) (delete-char 1)                       ;delete the newline
+  (insert "\","))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;  Number lines in region starting with 1 or prefix arg
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -278,11 +298,6 @@ This must be bound to a mouse-down event in the mode-line."
   (hilit-rehighlight-buffer))
 
 (global-set-key [f5] 'toggle-hilit)
-
-(defun kpx ()
-  (interactive)
-  (setq buffer-read-only nil)
-  (delete-non-matching-lines "gif\\|GIF\\|jpg\\|JPG\\|jpeg\\|JPEG"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; turn the region into something suitable for pasting into Word or other

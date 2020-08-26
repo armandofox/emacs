@@ -43,5 +43,5 @@ insert double quote."
          (setq perl-brace-imaginary-offset 0)
          (setq perl-label-offset -2)
          (setq fill-column 79)
-         (require 'perl-descr "perl-descr.el")
+         ;;;(require 'perl-descr "perl-descr.el")
          (define-key perl-mode-map "\C-hf" 'describe-perl-symbol)))

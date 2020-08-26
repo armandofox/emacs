@@ -4,14 +4,6 @@
 ;;;;    my .emacs file from hell now points to a number of smaller files.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;  add my emacs directory to the load path for loading customization
-;;;  files, and load some.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(setq default-frame-alist '((width . 100) (fullscreen . fullheight)))
-(setq initial-frame-list '((width . 100) (fullscreen . fullheight) (left . 0.75)))
-
 (setq load-path
       (append (list "/usr/local/share/emacs/site-lisp"
                     "/usr/share/emacs/site-lisp"
@@ -21,9 +13,12 @@
                     "~/emacs/plugins/yasnippet")
               load-path
               ))
+(dolist (path '("/usr/local/bin" "/opt/local/bin"))
+  (setenv "PATH" (concat (getenv "PATH") ":" path))
+  (push path exec-path))
+
 
 (require 'yasnippet)
-; (require 'ace-window)
 (require 'package)
 (add-to-list 'package-archives (cons "melpa" "http://melpa.org/packages/") t)
 
@@ -31,22 +26,6 @@
 ;;;   setup some default- and configuration-variables.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(require 'cl)                             ;;; Common LISP macros
-
-(defvar home-page-url "http://www.cs.berkeley.edu/~fox")
-
-(setq emacs19 (>= (string-to-number emacs-version) 19))
-
-(when (equal system-type 'darwin)
-  (dolist (path '("/usr/local/bin" "/opt/local/bin"))
-    (setenv "PATH" (concat (getenv "PATH") ":" path))
-    (push path exec-path)))
-
-(defun make-identity-translations ()
-  (let ((identity-translations (make-string 256 0)))
-    (dotimes (i 256)
-      (setf (aref identity-translations i) i))
-    identity-translations))
 
 (defun big-font ()
   (interactive)
@@ -55,7 +34,6 @@
 
 (setq
  blink-cursor-mode t
- gud-gdb-command-name "gdb --annotate=1"
  js2-auto-indent-p t
  js2-basic-offset 2
  js2-bounce-indent-p nil
@@ -83,6 +61,9 @@
  require-final-newline 'ask         ;;; Confirm add NL at EOF if not pres
  scroll-conservatively 1000         ;;; scroll 1 line at a time on C-n/C-p
  dired-listing-switches "-alg"
+
+ default-frame-alist '((width . 100) (fullscreen . fullheight))
+ initial-frame-list '((width . 100) (fullscreen . fullheight) (left . 0.75))
  )
 
 (setq-default
@@ -96,44 +77,25 @@
 (set-cursor-color 'red)
 (blink-cursor-mode 1)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;   allow use of some commands that aren't available in "novice mode"
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(put 'eval-expression 'disabled nil)
-(put 'narrow-to-region 'disabled nil)
-(put 'save-buffers-kill-emacs 'disabled t)
-(menu-bar-mode 1)
-
-
-;; Set transparency of emacs
-(defun transparency (value)
-  "Sets the transparency of the frame window. 0=transparent/100=opaque"
-  (interactive "nTransparency Value 0 - 100 opaque:")
-  (set-frame-parameter (selected-frame) 'alpha value))
-
-(defun tags-search-other-window (regexp)
-  "Search for tag (regexp) in other window"
-  (interactive "sTags search other window (regexp): ")
-  (switch-to-buffer-other-window nil)
-  (tags-search regexp))
-
-(setq files
-      '("automode"
-        "crypt"    ;; automatically recognize encrypted/compressed files
-        "efill"
-        "two-mode-mode"
-        "hooks/find-file-hooks"
-        "haml-mode"
-        "unmacify"
-        "misc"
-        "wc-mode"
-        "nxhtml/autostart.el"
-        ))
 
 (defun whole-enchilada ()
   "Load all customizations."
   (interactive)
+  (setq files
+        '("misc"
+          "automode"
+          "crypt"    ;; automatically recognize encrypted/compressed files
+          "efill"
+          "two-mode-mode"
+          "hooks/find-file-hooks"
+          "haml-mode"
+          "unmacify"
+          "misc"
+          "wc-mode"
+          "nxhtml/autostart.el"
+          ))
+
+
   (server-start)
   (column-number-mode)
   (key-bindings)
@@ -147,11 +109,11 @@
     (message "Loading hooks from %s..." hook)
     (load hook nil 'quietly))
   ;; re-enable some commands
-  (dolist (prop '(scroll-left upcase-region downcase-region))
+  (menu-bar-mode 1)
+  (dolist (prop '(eval-expression narrow-to-region scroll-left upcase-region downcase-region))
     (put prop 'disabled nil))
+  (put 'save-buffers-kill-emacs 'disabled t)
   (message "Done loading hooks"))
-
-(load "misc" nil 'quietly)                           ;always need this.
 
 (if (boundp 'first-line-special-regexp)
     (setq first-line-special-regexp
